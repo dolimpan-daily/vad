@@ -16,6 +16,8 @@ class VadHandler {
   /// Returns a new instance of VadHandlerBase.
   static VadHandlerBase create({required bool isDebug, String modelPath = ''}) {
     return implementation.createVadHandler(
-        isDebug: isDebug, modelPath: modelPath);
+      isDebug: isDebug,
+      modelPath: modelPath,
+    );
   }
 }

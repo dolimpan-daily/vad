@@ -23,18 +23,22 @@ abstract class VadHandlerBase {
   /// Stream of error events
   Stream<String> get onError;
 
+  /// Load model and intialize
+  Future<void> init({
+    double positiveSpeechThreshold = 0.5,
+    double negativeSpeechThreshold = 0.35,
+    int preSpeechPadFrames = 1,
+    int redemptionFrames = 8,
+    int frameSamples = 1536,
+    int minSpeechFrames = 3,
+    bool submitUserSpeechOnPause = false,
+    String model = 'legacy',
+    String baseAssetPath = 'assets/packages/vad/assets/',
+    String onnxWASMBasePath = 'assets/packages/vad/assets/',
+  });
+
   /// Start listening for speech events
-  void startListening(
-      {double positiveSpeechThreshold = 0.5,
-      double negativeSpeechThreshold = 0.35,
-      int preSpeechPadFrames = 1,
-      int redemptionFrames = 8,
-      int frameSamples = 1536,
-      int minSpeechFrames = 3,
-      bool submitUserSpeechOnPause = false,
-      String model = 'legacy',
-      String baseAssetPath = 'assets/packages/vad/assets/',
-      String onnxWASMBasePath = 'assets/packages/vad/assets/'});
+  void startListening();
 
   /// Stop listening for speech events
   void stopListening();

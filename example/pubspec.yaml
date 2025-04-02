@@ -37,6 +37,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   permission_handler: ^11.4.0
   audioplayers: ^6.3.0
+  flutter_recorder: ^1.1.0
   vad:
     path: ../
 

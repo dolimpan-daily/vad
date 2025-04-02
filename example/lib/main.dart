@@ -1,12 +1,13 @@
 // lib/main.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter_recorder/flutter_recorder.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:vad/vad.dart';
 import 'package:vad_example/recording.dart';
-import 'package:vad_example/vad_settings_dialog.dart';
-import 'package:vad_example/ui/vad_ui.dart';
 import 'package:vad_example/ui/app_theme.dart';
+import 'package:vad_example/ui/vad_ui.dart';
+import 'package:vad_example/vad_settings_dialog.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -44,16 +45,16 @@ class _VadManagerState extends State<VadManager> {
   void initState() {
     super.initState();
     settings = VadSettings();
+    Recorder.instance.init(
+      format: PCMFormat.s16le,
+      sampleRate: 16000,
+    );
     _initializeVad();
   }
 
-  void _initializeVad() {
+  void _initializeVad() async {
     _vadHandler = VadHandler.create(isDebug: true);
-    _setupVadHandler();
-  }
-
-  void _startListening() {
-    _vadHandler.startListening(
+    await _vadHandler.init(
       frameSamples: settings.frameSamples,
       minSpeechFrames: settings.minSpeechFrames,
       preSpeechPadFrames: settings.preSpeechPadFrames,
@@ -65,6 +66,11 @@ class _VadManagerState extends State<VadManager> {
       baseAssetPath: 'assets/packages/vad/assets/',
       onnxWASMBasePath: 'assets/packages/vad/assets/',
     );
+    _setupVadHandler();
+  }
+
+  void _startListening() {
+    _vadHandler.startListening();
     setState(() {
       isListening = true;
     });

@@ -4,7 +4,9 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:js_interop';
 import 'dart:js_interop_unsafe';
+
 import 'package:flutter/foundation.dart';
+
 import 'vad_handler_base.dart';
 
 /// Start listening for voice activity detection (JS-binding)
@@ -87,17 +89,18 @@ class VadHandlerWeb implements VadHandlerBase {
   Stream<String> get onError => _onErrorController.stream;
 
   @override
-  void startListening(
-      {double positiveSpeechThreshold = 0.5,
-      double negativeSpeechThreshold = 0.35,
-      int preSpeechPadFrames = 1,
-      int redemptionFrames = 8,
-      int frameSamples = 1536,
-      int minSpeechFrames = 3,
-      bool submitUserSpeechOnPause = false,
-      String model = 'legacy',
-      String baseAssetPath = 'assets/packages/vad/assets/',
-      String onnxWASMBasePath = 'assets/packages/vad/assets/'}) {
+  void startListening({
+    double positiveSpeechThreshold = 0.5,
+    double negativeSpeechThreshold = 0.35,
+    int preSpeechPadFrames = 1,
+    int redemptionFrames = 8,
+    int frameSamples = 1536,
+    int minSpeechFrames = 3,
+    bool submitUserSpeechOnPause = false,
+    String model = 'legacy',
+    String baseAssetPath = 'assets/packages/vad/assets/',
+    String onnxWASMBasePath = 'assets/packages/vad/assets/',
+  }) {
     if (isDebug) {
       debugPrint(
           'VadHandlerWeb: startListening: Calling startListeningImpl with parameters: '
@@ -224,6 +227,22 @@ class VadHandlerWeb implements VadHandlerBase {
       debugPrint('VadHandlerWeb: stopListening');
     }
     stopListeningImpl();
+  }
+
+  @override
+  Future<void> init({
+    double positiveSpeechThreshold = 0.5,
+    double negativeSpeechThreshold = 0.35,
+    int preSpeechPadFrames = 1,
+    int redemptionFrames = 8,
+    int frameSamples = 1536,
+    int minSpeechFrames = 3,
+    bool submitUserSpeechOnPause = false,
+    String model = 'legacy',
+    String baseAssetPath = 'assets/packages/vad/assets/',
+    String onnxWASMBasePath = 'assets/packages/vad/assets/',
+  }) {
+    throw UnimplementedError();
   }
 }
 
