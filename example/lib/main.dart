@@ -1,7 +1,7 @@
 // lib/main.dart
 
 import 'package:flutter/material.dart';
-import 'package:flutter_recorder/flutter_recorder.dart';
+// import 'package:flutter_recorder/flutter_recorder.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:vad/vad.dart';
 import 'package:vad_example/recording.dart';
@@ -45,10 +45,10 @@ class _VadManagerState extends State<VadManager> {
   void initState() {
     super.initState();
     settings = VadSettings();
-    Recorder.instance.init(
-      format: PCMFormat.s16le,
-      sampleRate: 16000,
-    );
+    // Recorder.instance.init(
+    //   format: PCMFormat.s16le,
+    //   sampleRate: 16000,
+    // );
     _initializeVad();
   }
 

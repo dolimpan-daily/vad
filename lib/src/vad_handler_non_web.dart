@@ -3,14 +3,14 @@
 import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
-import 'package:flutter_recorder/flutter_recorder.dart';
+import 'package:record/record.dart';
 import 'package:vad/vad.dart';
 
 import 'vad_iterator_base.dart';
 
 /// VadHandlerNonWeb class
 class VadHandlerNonWeb implements VadHandlerBase {
-  final Recorder _audioRecorder = Recorder.instance;
+  final AudioRecorder _audioRecorder = AudioRecorder();
   late VadIteratorBase _vadIterator;
   StreamSubscription<List<int>>? _audioStreamSubscription;
 
@@ -149,11 +149,18 @@ class VadHandlerNonWeb implements VadHandlerBase {
     await _initializeCompleter?.future;
 
     // Start recording with a stream
-    _audioStreamSubscription = _audioRecorder.uint8ListStream
-        .map((container) => container.rawData)
-        .listen(_vadIterator.processAudioData);
-    _audioRecorder.start();
-    _audioRecorder.startStreamingData();
+    final stream = await _audioRecorder.startStream(const RecordConfig(
+        encoder: AudioEncoder.pcm16bits,
+        sampleRate: sampleRate,
+        bitRate: 16,
+        numChannels: 1,
+        echoCancel: true,
+        autoGain: true,
+        noiseSuppress: true));
+
+    _audioStreamSubscription = stream.listen((data) async {
+      await _vadIterator.processAudioData(data);
+    });
   }
 
   @override
@@ -167,7 +174,6 @@ class VadHandlerNonWeb implements VadHandlerBase {
 
       await _audioStreamSubscription?.cancel();
       _audioStreamSubscription = null;
-      _audioRecorder.stopStreamingData();
       _audioRecorder.stop();
       _vadIterator.reset();
     } catch (e) {
