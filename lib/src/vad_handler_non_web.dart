@@ -149,14 +149,17 @@ class VadHandlerNonWeb implements VadHandlerBase {
     await _initializeCompleter?.future;
 
     // Start recording with a stream
-    final stream = await _audioRecorder.startStream(const RecordConfig(
+    final stream = await _audioRecorder.startStream(
+      const RecordConfig(
         encoder: AudioEncoder.pcm16bits,
         sampleRate: sampleRate,
         bitRate: 16,
         numChannels: 1,
-        echoCancel: true,
-        autoGain: true,
-        noiseSuppress: true));
+        echoCancel: false,
+        autoGain: false,
+        noiseSuppress: false,
+      ),
+    );
 
     _audioStreamSubscription = stream.listen((data) async {
       await _vadIterator.processAudioData(data);
