@@ -177,7 +177,7 @@ class VadHandlerNonWeb implements VadHandlerBase {
 
       await _audioStreamSubscription?.cancel();
       _audioStreamSubscription = null;
-      _audioRecorder.stop();
+      await _audioRecorder.cancel();
       _vadIterator.reset();
     } catch (e) {
       _onErrorController.add(e.toString());
