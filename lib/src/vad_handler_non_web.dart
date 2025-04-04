@@ -197,6 +197,7 @@ class VadHandlerNonWeb implements VadHandlerBase {
     _onRealSpeechStartController.close();
     _onVADMisfireController.close();
     _onErrorController.close();
+    _audioRecorder.dispose();
   }
 }
 
