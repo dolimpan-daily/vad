@@ -186,18 +186,18 @@ class VadHandlerNonWeb implements VadHandlerBase {
   }
 
   @override
-  void dispose() async {
+  Future<void> dispose() async {
     if (isDebug) debugPrint('VadHandlerNonWeb: dispose');
     await _initializeCompleter?.future;
-    stopListening();
+    await stopListening();
     _vadIterator.release();
-    _onSpeechEndController.close();
-    _onFrameProcessedController.close();
-    _onSpeechStartController.close();
-    _onRealSpeechStartController.close();
-    _onVADMisfireController.close();
-    _onErrorController.close();
-    _audioRecorder.dispose();
+    await _onSpeechEndController.close();
+    await _onFrameProcessedController.close();
+    await _onSpeechStartController.close();
+    await _onRealSpeechStartController.close();
+    await _onVADMisfireController.close();
+    await _onErrorController.close();
+    await _audioRecorder.dispose();
   }
 }
 

@@ -209,16 +209,16 @@ class VadHandlerWeb implements VadHandlerBase {
   }
 
   @override
-  void dispose() {
+  Future<void> dispose() async {
     if (isDebug) {
       debugPrint('VadHandlerWeb: dispose');
     }
-    _onSpeechEndController.close();
-    _onFrameProcessedController.close();
-    _onSpeechStartController.close();
-    _onRealSpeechStartController.close();
-    _onVADMisfireController.close();
-    _onErrorController.close();
+    await _onSpeechEndController.close();
+    await _onFrameProcessedController.close();
+    await _onSpeechStartController.close();
+    await _onRealSpeechStartController.close();
+    await _onVADMisfireController.close();
+    await _onErrorController.close();
   }
 
   @override

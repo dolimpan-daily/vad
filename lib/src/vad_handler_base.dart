@@ -44,5 +44,5 @@ abstract class VadHandlerBase {
   void stopListening();
 
   /// Dispose the VAD handler
-  void dispose();
+  Future<void> dispose();
 }
