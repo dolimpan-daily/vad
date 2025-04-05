@@ -158,6 +158,7 @@ class VadHandlerNonWeb implements VadHandlerBase {
         echoCancel: false,
         autoGain: false,
         noiseSuppress: false,
+        iosConfig: IosRecordConfig(manageAudioSession: false),
       ),
     );
 
