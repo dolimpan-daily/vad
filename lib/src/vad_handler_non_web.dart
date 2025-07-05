@@ -24,6 +24,9 @@ class VadHandlerNonWeb implements VadHandlerBase {
 
   bool _submitUserSpeechOnPause = false;
 
+  /// Flag to indicate if audio processing is paused
+  bool _isPaused = false;
+
   /// Sample rate
   static const int sampleRate = 16000;
 
@@ -145,25 +148,34 @@ class VadHandlerNonWeb implements VadHandlerBase {
   }
 
   @override
-  Future<void> startListening() async {
+  Future<void> startListening({
+    RecordConfig? recordConfig,
+  }) async {
     await _initializeCompleter?.future;
 
+    // Reset pause state when starting listening
+    _isPaused = false;
+
     // Start recording with a stream
-    final stream = await _audioRecorder.startStream(
-      const RecordConfig(
-        encoder: AudioEncoder.pcm16bits,
-        sampleRate: sampleRate,
-        bitRate: 16,
-        numChannels: 1,
-        echoCancel: false,
-        autoGain: false,
-        noiseSuppress: false,
-        iosConfig: IosRecordConfig(manageAudioSession: false),
-      ),
-    );
+    final config = recordConfig ??
+        const RecordConfig(
+          encoder: AudioEncoder.pcm16bits,
+          sampleRate: sampleRate,
+          bitRate: 16,
+          numChannels: 1,
+          echoCancel: false,
+          autoGain: false,
+          noiseSuppress: false,
+          iosConfig: IosRecordConfig(manageAudioSession: false),
+        );
+    final stream = await _audioRecorder.startStream(config);
 
     _audioStreamSubscription = stream.listen((data) async {
-      await _vadIterator.processAudioData(data);
+      // Only process audio data if not paused
+      if (!_isPaused) {
+        await _vadIterator.processAudioData(data);
+      }
+      // When paused, incoming data is received but ignored
     });
   }
 
@@ -180,9 +192,22 @@ class VadHandlerNonWeb implements VadHandlerBase {
       _audioStreamSubscription = null;
       await _audioRecorder.cancel();
       _vadIterator.reset();
+      _isPaused = false;
     } catch (e) {
       _onErrorController.add(e.toString());
       if (isDebug) debugPrint('Error stopping audio stream: $e');
+    }
+  }
+
+  @override
+  Future<void> pauseListening() async {
+    if (isDebug) debugPrint('pauseListening');
+    // Set paused flag to true to ignore incoming audio data
+    _isPaused = true;
+
+    // If submitUserSpeechOnPause is enabled, force end speech on pause
+    if (_submitUserSpeechOnPause) {
+      _vadIterator.forceEndSpeech();
     }
   }
 
@@ -191,6 +216,9 @@ class VadHandlerNonWeb implements VadHandlerBase {
     if (isDebug) debugPrint('VadHandlerNonWeb: dispose');
     await _initializeCompleter?.future;
     await stopListening();
+    await _audioRecorder.dispose();
+    _audioStreamSubscription?.cancel();
+    _audioStreamSubscription = null;
     _vadIterator.release();
     await _onSpeechEndController.close();
     await _onFrameProcessedController.close();

@@ -17,9 +17,11 @@ class VadUIController {
 class VadUI extends StatefulWidget {
   final List<Recording> recordings;
   final bool isListening;
+  final bool isPaused;
   final VadSettings settings;
   final Function() onStartListening;
   final Function() onStopListening;
+  final Function() onPauseListening;
   final Function() onRequestMicrophonePermission;
   final Function() onShowSettingsDialog;
   final VadUIController? controller;
@@ -28,9 +30,11 @@ class VadUI extends StatefulWidget {
     super.key,
     required this.recordings,
     required this.isListening,
+    required this.isPaused,
     required this.settings,
     required this.onStartListening,
     required this.onStopListening,
+    required this.onPauseListening,
     required this.onRequestMicrophonePermission,
     required this.onShowSettingsDialog,
     this.controller,
@@ -310,7 +314,7 @@ class _VadUIState extends State<VadUI> {
               color: Colors.black,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.3),
+                  color: Colors.black.withValues(alpha: 0.3),
                   spreadRadius: 1,
                   blurRadius: 10,
                   offset: const Offset(0, -1),
@@ -339,14 +343,47 @@ class _VadUIState extends State<VadUI> {
                   ],
                 ),
                 const SizedBox(height: 8),
-                ElevatedButton.icon(
-                  onPressed: widget.isListening
-                      ? widget.onStopListening
-                      : widget.onStartListening,
-                  icon: Icon(widget.isListening ? Icons.stop : Icons.mic),
-                  label: Text(widget.isListening
-                      ? "Stop Listening"
-                      : "Start Listening"),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ElevatedButton.icon(
+                      onPressed: widget.isListening && !widget.isPaused
+                          ? null
+                          : widget.onStartListening,
+                      icon: Icon(widget.isPaused
+                          ? Icons.play_arrow
+                          : widget.isListening
+                              ? Icons.mic
+                              : Icons.mic),
+                      label: Text(widget.isPaused
+                          ? "Resume"
+                          : widget.isListening
+                              ? "Listening..."
+                              : "Start Listening"),
+                    ),
+                    if (widget.isListening && !widget.isPaused) ...[
+                      const SizedBox(width: 8),
+                      ElevatedButton.icon(
+                        onPressed: widget.onPauseListening,
+                        icon: const Icon(Icons.pause),
+                        label: const Text("Pause"),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orange,
+                        ),
+                      ),
+                    ],
+                    if (widget.isListening || widget.isPaused) ...[
+                      const SizedBox(width: 8),
+                      ElevatedButton.icon(
+                        onPressed: widget.onStopListening,
+                        icon: const Icon(Icons.stop),
+                        label: const Text("Stop"),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
                 const SizedBox(height: 8),
                 ElevatedButton.icon(

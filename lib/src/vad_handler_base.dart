@@ -2,6 +2,8 @@
 
 import 'dart:async';
 
+import 'package:record/record.dart';
+
 /// Abstract class for VAD handler
 abstract class VadHandlerBase {
   /// Stream of speech end events
@@ -38,10 +40,15 @@ abstract class VadHandlerBase {
   });
 
   /// Start listening for speech events
-  void startListening();
+  void startListening({
+    RecordConfig? recordConfig,
+  });
 
   /// Stop listening for speech events
-  void stopListening();
+  Future<void> stopListening();
+
+  /// Pause listening for speech events
+  Future<void> pauseListening();
 
   /// Dispose the VAD handler
   Future<void> dispose();

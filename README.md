@@ -1,7 +1,23 @@
 # VAD
+[![pub package](https://img.shields.io/pub/v/vad.svg)](https://pub.dev/packages/vad)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![GitHub Repo](https://img.shields.io/badge/GitHub-Repo-blue.svg)](https://github.com/keyur2maru/vad)
+<p align="center">
+  <img src="https://raw.githubusercontent.com/keyur2maru/vad/master/img/vad.svg" max-height="100" alt="VAD" />
+</p>
+
+
 VAD is a Flutter library for Voice Activity Detection (VAD) across **iOS** , **Android** , and **Web**  platforms. This package allows applications to start and stop VAD-based listening and handle various VAD events seamlessly.
 Under the hood, the VAD Package uses `dart:js_interop` for Web to run [VAD JavaScript library](https://github.com/ricky0123/vad) and [onnxruntime](https://github.com/gtbluesky/onnxruntime_flutter) for iOS and Android utilizing onnxruntime library with full-feature parity with the JavaScript library.
 The package provides a simple API to start and stop VAD listening, configure VAD parameters, and handle VAD events such as speech start, speech end, errors, and misfires.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/keyur2maru/vad/master/img/screenshot-1.png" alt="Screenshot 1" />
+</p>
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/keyur2maru/vad/master/img/screenshot-2.png" alt="Screenshot 2" />
+</p>
 
 ## Table of Contents
 <!-- TOC start (generated with https://github.com/derlin/bitdowntoc) -->
@@ -24,6 +40,7 @@ The package provides a simple API to start and stop VAD listening, configure VAD
             - [`create`](#create)
             - [`startListening`](#startlistening)
             - [`stopListening`](#stoplistening)
+            - [`pauseListening`](#pauselistening)
             - [`dispose`](#dispose)
         +  [Events](#events)
             - [`onSpeechEnd`](#onspeechend)
@@ -37,6 +54,12 @@ The package provides a simple API to start and stop VAD listening, configure VAD
         + [Android](#android-1)
         + [Web](#web-1)
     * [Cleaning Up](#cleaning-up)
+    * [Troubleshooting](#troubleshooting)
+        + [iOS Issues](#ios-issues)
+            - [TestFlight Build Error: "Failed to lookup symbol 'OrtGetApiBase'"](#testflight-build-error-failed-to-lookup-symbol-ortgetapibase)
+        + [Android Issues](#android-issues)
+            - [Missing libonnxruntime.so Library Error](#missing-libonnxruntimeso-library-error)
+            - [Echo Cancellation Not Working on Some Android Devices](#echo-cancellation-not-working-on-some-android-devices)
     * [Tested Platforms](#tested-platforms)
     * [Contributing](#contributing)
     * [Acknowledgements](#acknowledgements)
@@ -81,7 +104,7 @@ To use VAD on the web, include the following scripts within the head and body ta
 
 You can also refer to the [VAD Example App](https://github.com/keyur2maru/vad/blob/master/example/web/index.html) for a complete example.
 
-**Tip: Enable WASM multithreading (SharedArrayBuffer) for a 10x performance improvement** 
+**Tip: Enable WASM multithreading ([SharedArrayBuffer](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/SharedArrayBuffer)) for performance improvements**
 
 * For Production, send the following headers in your server response:
   ```html
@@ -247,7 +270,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   void dispose() {
-    _vadHandler.dispose();
+    _vadHandler.dispose(); // Note: dispose() is called without await in Widget.dispose()
     super.dispose();
   }
 
@@ -260,12 +283,12 @@ class _MyHomePageState extends State<MyHomePage> {
         children: [
           ElevatedButton.icon(
             onPressed: () async {
+              if (isListening) {
+                await _vadHandler.stopListening();
+              } else {
+                await _vadHandler.startListening();
+              }
               setState(() {
-                if (isListening) {
-                  _vadHandler.stopListening();
-                } else {
-                  _vadHandler.startListening();
-                }
                 isListening = !isListening;
               });
             },
@@ -333,15 +356,16 @@ class _MyHomePageState extends State<MyHomePage> {
 Creates a new instance of the `VadHandler` with optional debugging enabled with the `isDebug` parameter and optional configurable model path with the `modelPath` parameter but it's only applicable for the iOS and Android platforms. It has no effect on the Web platform.
 
 #### `startListening`
-Starts the VAD with configurable parameters.
+Starts the VAD with configurable parameters. Returns a `Future<void>` that completes when the VAD session has started.
 Notes:
 - The sample rate is fixed at 16kHz, which means when using legacy model with default frameSamples value, one frame is equal to 1536 samples or 96ms.
 - For Silero VAD v5 model, frameSamples must be set to 512 samples unlike the previous version, so one frame is equal to 32ms.
 - `model` parameter can be set to 'legacy' or 'v5' to use the respective VAD model. Default is 'legacy'.
 - `baseAssetPath` and `onnxWASMBasePath` are the default paths for the VAD JavaScript library and onnxruntime WASM files respectively. Currently, they are bundled with the package but can be overridden if needed by providing custom paths or CDN URLs. **<u>Only applicable for the Web platform.</u>**
+- `recordConfig` allows you to provide custom recording configuration for non-web platforms (iOS/Android). If not provided, default configuration with 16kHz sample rate, PCM16 encoding, echo cancellation, auto gain, and noise suppression will be used. **<u>Only applicable for non-web platforms (iOS/Android).</u>**
 
 ```dart
-void startListening({
+Future<void> startListening({
   double positiveSpeechThreshold = 0.5,
   double negativeSpeechThreshold = 0.35,
   int preSpeechPadFrames = 1,
@@ -352,23 +376,33 @@ void startListening({
   String model = 'legacy',
   String baseAssetPath = 'assets/packages/vad/assets/',
   String onnxWASMBasePath = 'assets/packages/vad/assets/',
+  RecordConfig? recordConfig,
 });
 ```
 
 #### `stopListening`
-Stops the VAD session.
+Stops the VAD session. Returns a `Future<void>` that completes when the VAD session has stopped.
 
 
 ```dart
-void stopListening();
+Future<void> stopListening();
+```
+
+#### `pauseListening`
+Pauses VAD-based listening without fully stopping the audio stream. Returns a `Future<void>` that completes when the VAD session has been paused.
+
+Note: If `submitUserSpeechOnPause` was enabled, any in-flight speech will immediately be submitted (`forceEndSpeech()`).
+
+```dart
+Future<void> pauseListening();
 ```
 
 #### `dispose`
-Disposes the VADHandler and closes all streams.
+Disposes the VADHandler and closes all streams. Returns a `Future<void>` that completes when all resources have been disposed.
 
 
 ```dart
-void dispose();
+Future<void> dispose();
 ```
 
 ## Events
@@ -416,11 +450,103 @@ Proper handling of microphone permissions is crucial for the VAD Package to func
 
 ## Cleaning Up
 
-To prevent memory leaks and ensure that all resources are properly released, always call the `dispose` method on the `VadHandler` instance when it's no longer needed.
+To prevent memory leaks and ensure that all resources are properly released, always call the `dispose` method on the `VadHandler` instance when it's no longer needed. Since `dispose()` is now async, use `await` when possible:
 
 ```dart
+// When called from an async context
+await vadHandler.dispose();
+
+// In Widget.dispose() (synchronous context), call without await
 vadHandler.dispose();
 ```
+
+## Troubleshooting
+
+### iOS Issues
+
+#### TestFlight Build Error: "Failed to lookup symbol 'OrtGetApiBase'"
+
+If you encounter this error when uploading to TestFlight:
+```
+flutter: VAD model initialization failed: Invalid argument(s): Failed to lookup symbol 'OrtGetApiBase': dlsym(RTLD_DEFAULT, OrtGetApiBase): symbol not found
+```
+
+**Fix:** Configure Xcode build settings to prevent symbol stripping:
+1. Open Xcode → Runner.xcodeproj
+2. Select "Targets-Runner" → Build Settings Tab
+3. Navigate to the Deployment category
+4. Set "Strip Linked Product" to **"No"**
+5. Set "Strip Style" to **"Non-Global-Symbols"**
+
+*Solution found at: https://github.com/gtbluesky/onnxruntime_flutter/issues/24#issuecomment-2419096341*
+
+### Android Issues
+
+#### Missing libonnxruntime.so Library Error
+
+Some Android devices may report this error:
+```
+VAD model initialization failed: Invalid argument(s): Failed to load dynamic library 'libonnxruntime.so': dlopen failed: library "libonnxruntime.so" not found
+```
+
+**Fix:** Use a specific commit of the onnxruntime package by adding this to your `pubspec.yaml`:
+
+```yaml
+dependency_overrides:
+  onnxruntime:
+    git:
+      url: https://github.com/gtbluesky/onnxruntime_flutter.git
+      ref: 526de653892a84af3e1a541e49d4f4b3042bb2cd
+```
+
+*Solution found at: https://github.com/gtbluesky/onnxruntime_flutter/pull/31*
+
+#### Echo Cancellation Not Working on Some Android Devices
+
+Some Android devices, particularly Samsung devices (e.g., Samsung S20), may experience issues with echo cancellation not functioning properly, while the same code works fine on other devices (e.g., Lenovo Tab M8).
+
+**Fix:** Use a patched version of the record package with improved audio configuration. Add this to your `pubspec.yaml`:
+
+```yaml
+dependency_overrides:
+  record:
+    git:
+      url: https://github.com/keyur2maru/record.git
+      path: record
+  record_platform_interface:
+    git:
+      url: https://github.com/keyur2maru/record.git
+      path: record_platform_interface
+  record_android:
+    git:
+      url: https://github.com/keyur2maru/record.git
+      path: record_android
+```
+
+**Usage example:**
+
+```dart
+await _vadHandler.startListening(
+  recordConfig: const RecordConfig(
+    encoder: AudioEncoder.pcm16bits,
+    sampleRate: 16000,
+    numChannels: 1,
+    echoCancel: true,
+    noiseSuppress: true,
+    autoGain: true,
+    androidConfig: AndroidRecordConfig(
+      audioSource: AndroidAudioSource.voiceCommunication,
+      audioManagerMode: AudioManagerMode.modeInCommunication,
+      setSpeakerphoneOn: true,
+    ),
+  ),
+);
+```
+
+This fix leverages `AudioManager.MODE_IN_COMMUNICATION` and `AudioManager.setSpeakerPhone(true)` along with the `android.permission.MODIFY_AUDIO_SETTINGS` permission to resolve echo cancellation issues.
+
+*Note: An official fix is pending in the upstream record package: https://github.com/llfbandit/record/commit/a24931a8e344410b68f36b1182a600f4e33bff42*
+
 
 ## Tested Platforms
 The VAD Package has been tested on the following platforms:
