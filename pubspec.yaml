@@ -3,7 +3,7 @@ description: "VAD is a cross-platform Voice Activity Detection system, allowing 
 version: 0.0.6
 repository: https://github.com/keyur2maru/vad
 issue_tracker: https://github.com/keyur2maru/vad/issues
-homepage: https://keyur2maru.github.io/vad/
+publish_to: 'none'
 
 
 environment:
@@ -18,7 +18,11 @@ platforms:
 dependencies:
   flutter:
     sdk: flutter
-  onnxruntime: ^1.4.1
+
+  onnxruntime:
+    git:
+      url: https://github.com/dolimpan-daily/onnxruntime_flutter.git
+  
   permission_handler: ^12.0.0
   record: ^6.0.0
   # flutter_recorder: ^1.1.0
